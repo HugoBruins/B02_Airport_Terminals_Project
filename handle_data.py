@@ -58,7 +58,6 @@ def csv_to_dataframe(filename: str) -> dict:
                     "MinimumOccupancy6",	"MinimumOccupancy7",	"Identifier"]
     # Remove all rows with NaN (e.g. the first scenario)
     data = data.dropna(axis=0).reset_index(drop=True)
-    print(data.shape)
 
     data[["IdentifierType", "IdentifierScenario", "IdentifierRun"]] = data["Identifier"].str.split("-", expand=True)
 
@@ -96,6 +95,7 @@ def manipulate_data(data: dict) -> dict:
     data["Output"] = output_data
     return data
 
+
 def average_data(data: dict) -> dict:
     """
     There are 500 scenarios with each 256 runs, this function aims to average out the runs to get a reduced dataset
@@ -104,9 +104,30 @@ def average_data(data: dict) -> dict:
     :param data: dataset
     :return: reduced dataset
     """
-    # print(data["Input"])
-    # print(data["Input"].groupby(data["Input"]["IdentifierType"]))
-    pass
+    function_output = dict()
+    averaged_data = pd.DataFrame()
+
+    # Combine in and output to make it easier to work with
+    full_data = pd.concat([data["Output"], data["Input"]], axis=1)
+
+    # Split first by identifier-type (e.g. "INI"), then by the Scenario number to get the 255 runs
+    for scenario_type in full_data.groupby(full_data["IdentifierType"]):
+        for scenario in scenario_type[1].groupby(scenario_type[1]["IdentifierScenario"]):
+            # Average all the data in these runs and add them to the output of the function
+            average_row = scenario[1].mean(axis=0, skipna=False, numeric_only=True)
+            averaged_data = pd.concat([averaged_data, average_row.to_frame().T], ignore_index=True)
+    # Save it as a csv for later use or checking
+    averaged_data.to_csv("logfiles_averaged_scenarios.csv")
+
+    # Split in- and output again
+    output_data = averaged_data.iloc[:, :averaged_data.columns.get_loc("Gui")]
+    input_data = averaged_data.iloc[:, averaged_data.columns.get_loc("Gui"):]
+
+    function_output["Output"] = output_data
+    function_output["Input"] = input_data
+
+    return function_output
+
 
 def pca_on_input(data: dict, k: int) -> (dict, PCA):
     """
