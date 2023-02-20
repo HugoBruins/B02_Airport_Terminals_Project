@@ -56,7 +56,13 @@ def csv_to_dataframe(filename: str) -> dict:
                     "FlightPath3", "FlightPath4",	"FlightPath5",	"FlightPath6",	"FlightPath7",	"MinimumOccupancy1",
                     "MinimumOccupancy2",	"MinimumOccupancy3",	"MinimumOccupancy4",	"MinimumOccupancy5",
                     "MinimumOccupancy6",	"MinimumOccupancy7",	"Identifier"]
+    # Remove all rows with NaN (e.g. the first scenario)
+    data = data.dropna(axis=0).reset_index(drop=True)
+    print(data.shape)
 
+    data[["IdentifierType", "IdentifierScenario", "IdentifierRun"]] = data["Identifier"].str.split("-", expand=True)
+
+    # Split the data into in and output tables
     output_data = data.iloc[:, :data.columns.get_loc("Gui")]
     input_data = data.iloc[:, data.columns.get_loc("Gui"):]
 
@@ -90,6 +96,17 @@ def manipulate_data(data: dict) -> dict:
     data["Output"] = output_data
     return data
 
+def average_data(data: dict) -> dict:
+    """
+    There are 500 scenarios with each 256 runs, this function aims to average out the runs to get a reduced dataset
+    with only 500 rows instead of 500*256
+
+    :param data: dataset
+    :return: reduced dataset
+    """
+    # print(data["Input"])
+    # print(data["Input"].groupby(data["Input"]["IdentifierType"]))
+    pass
 
 def pca_on_input(data: dict, k: int) -> (dict, PCA):
     """
