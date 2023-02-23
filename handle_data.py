@@ -1,21 +1,41 @@
 import os
 import time
 import pandas as pd
-from sklearn import preprocessing
-from sklearn.decomposition import PCA
+import re
 
 
 def folders_to_csv(folder_name: str, file_name: str) -> None:
     """
-    Generates a single csv file from all the read input data
+    Generates a single csv file from all the read input data, including header
 
     :param folder_name: The name of the folder where the data should be read from
     :param file_name: The name of the output csv file
     :return: None
     """
     print(f"[DEBUG] Processing all folders in {folder_name}, if this is not desired take read_files() out of main")
+
+    columns = ["AvgQueueTime_Cl1", "AvgQueueTime_Cl2", "AvgQueueTime_Cl3", "AvgQueueTime_Cl4", "AvgQueueTime_SC",
+               "AvgTimeToGate", "PaxCompleted_SC", "PaxCompleted_Cl", "NumMissedFlights", "TotalExpenditure",
+               "MaxPaxInQueue_Cl1", "MaxPaxInQueue_Cl2", "MaxPaxInQueue_Cl3", "MaxPaxInQueue_Cl4",
+               "MaxPaxInQueue_SC", "Seed1", "Gui", "Timestep", "EndTimeSimulation", "Seed2",
+               "CheckInStrategy", "SecurityCheckpointStrategy", "CallToGateStrategy", "ScaleCheckpointTime",
+               "Timeslot1", "Timeslot2", "Timeslot3", "Timeslot4", "Timeslot5", "Timeslot6", "Timeslot7",
+               "ActiveGate1", "ActiveGate2", "ActiveGate3", "ActiveGate4", "ActiveGate5", "ActiveGate6",
+               "ActiveGate7", "NumberPaxFlight1", "NumberPaxFlight2", "NumberPaxFlight3", "NumberPaxFlight4",
+               "NumberPaxFlight5", "NumberPaxFlight6", "NumberPaxFlight7", "FlightPath1", "FlightPath2",
+               "FlightPath3", "FlightPath4", "FlightPath5", "FlightPath6", "FlightPath7", "MinimumOccupancy1",
+               "MinimumOccupancy2", "MinimumOccupancy3", "MinimumOccupancy4", "MinimumOccupancy5",
+               "MinimumOccupancy6", "MinimumOccupancy7", "IdentifierType", "IdentifierScenario", "IdentifierRun"]
     start_time = time.time()
     output_file = open(file_name, "w")
+
+    # Write down the header
+    for column in columns:
+        output_file.write(column)
+        if column != columns[-1]:
+            output_file.write(',')
+
+    output_file.write('\n')
 
     # Go through all the folders in the logfiles folder
     for root, dirs, files in os.walk(f".\\{folder_name}"):
@@ -27,11 +47,16 @@ def folders_to_csv(folder_name: str, file_name: str) -> None:
             with open(file_name, "r") as current_file:
                 for n, line in enumerate(current_file):
                     if n == 0:
-                        output_file.write(line.strip() + ",")
+                        output_file.write(line.strip() + ',')
                     if n == 1:
-                        output_file.write(line.replace("_",  ","))
-    print(f"[DEBUG] It took this long to read all the folders: {time.time()-start_time}")
+                        # Using re.sub because it is significantly faster than replace in this case
+                        line = re.sub('_', ',', line)
+                        # Replace last 2 - only to separate Identifiers
+                        line = line[::-1].replace('-', ',', 2)[::-1]
+                        output_file.write(line)
+
     output_file.close()
+    print(f"[DEBUG] It took this long to read all the folders: {time.time() - start_time}")
 
 
 def csv_to_dataframe(filename: str) -> dict:
@@ -42,24 +67,14 @@ def csv_to_dataframe(filename: str) -> dict:
     :param filename: The name of the (csv) file to read
     :return: A dictionary containing the input and output data with correctly named headers
     """
+    print("[DEBUG] Reading logfiles.csv into dataframe")
+    start_time = time.time()
+
     output = dict()
-    data = pd.read_csv(filename, header=None)
-    data.columns = ["AvgQueueTime_Cl1",	"AvgQueueTime_Cl2",	"AvgQueueTime_Cl3",	"AvgQueueTime_Cl4", "AvgQueueTime_SC",
-                    "AvgTimeToGate",	"PaxCompleted_SC",	"PaxCompleted_Cl",	"NumMissedFlights",	"TotalExpenditure",
-                    "MaxPaxInQueue_Cl1",	"MaxPaxInQueue_Cl2",	"MaxPaxInQueue_Cl3",	"MaxPaxInQueue_Cl4",
-                    "MaxPaxInQueue_SC",	"Seed1",	"Gui",	"Timestep",	"EndTimeSimulation",	"Seed2",
-                    "CheckInStrategy", "SecurityCheckpointStrategy",	"CallToGateStrategy",	"ScaleCheckpointTime",
-                    "Timeslot1", "Timeslot2",	"Timeslot3",	"Timeslot4",	"Timeslot5",	"Timeslot6", "Timeslot7",
-                    "ActiveGate1",	"ActiveGate2",	"ActiveGate3",	"ActiveGate4",	"ActiveGate5",	"ActiveGate6",
-                    "ActiveGate7", "NumberPaxFlight1",	"NumberPaxFlight2",	"NumberPaxFlight3",	"NumberPaxFlight4",
-                    "NumberPaxFlight5", "NumberPaxFlight6",	"NumberPaxFlight7",	"FlightPath1",	"FlightPath2",
-                    "FlightPath3", "FlightPath4",	"FlightPath5",	"FlightPath6",	"FlightPath7",	"MinimumOccupancy1",
-                    "MinimumOccupancy2",	"MinimumOccupancy3",	"MinimumOccupancy4",	"MinimumOccupancy5",
-                    "MinimumOccupancy6",	"MinimumOccupancy7",	"Identifier"]
+    data = pd.read_csv(filename, engine="pyarrow")
+
     # Remove all rows with NaN (e.g. the first scenario)
     data = data.dropna(axis=0).reset_index(drop=True)
-
-    data[["IdentifierType", "IdentifierScenario", "IdentifierRun"]] = data["Identifier"].str.split("-", expand=True)
 
     # Split the data into in and output tables
     output_data = data.iloc[:, :data.columns.get_loc("Gui")]
@@ -67,7 +82,7 @@ def csv_to_dataframe(filename: str) -> dict:
 
     output["Input"] = input_data
     output["Output"] = output_data
-
+    print(f"[DEBUG] Finished reading logfiles.csv into dataframe after {time.time() - start_time} seconds")
     return output
 
 
@@ -129,33 +144,6 @@ def average_data(data: dict) -> dict:
     return function_output
 
 
-def pca_on_input(data: dict, k: int) -> (dict, PCA):
-    """
-    Does a Principal Component Analysis transformation on the data that is input of the function to reduce the
-    dimensions of the input data.
-
-    :param data: A dictionary containing both the in and output data
-    :param k: The total amount of principal components that are desired
-    :return: A dict in the same format as the function input data ata but with the PCA transformed input data. And also
-    returns the pca fit that was used to transform the data
-    """
-    # Removing everything with letters instead of numbers
-    output = dict()
-    pca_input = data["Input"].drop(
-        ["Gui", "FlightPath1", "FlightPath2", "FlightPath3", "FlightPath4", "FlightPath5", "FlightPath6", "FlightPath7",
-         "Identifier"], axis=1)
-    scaler = preprocessing.RobustScaler()
-    scaler.fit(pca_input)
-    scaled_input = scaler.transform(pca_input)
-
-    pca = PCA(n_components=k)
-    pca.fit(scaled_input)
-    output["Input"] = pd.DataFrame(pca.transform(scaled_input))
-    output["Output"] = data["Output"]
-
-    return output, pca
-
-
 def manual_check_data(data: dict) -> None:
     """
     This function will print the column name and the respective value in the exact same row as the
@@ -165,13 +153,17 @@ def manual_check_data(data: dict) -> None:
     :return: None
     """
     print("[DEBUG] Begin of manual data check, you can compare these values with what is in the powerpoint")
-    input_row = data["Input"].loc[data["Input"]["Identifier"] == "ADA-117-158"]
+    input_row = data["Input"].loc[(data["Input"]["IdentifierType"] == "ADA") &
+                                  (data["Input"]["IdentifierScenario"] == 117) &
+                                  (data["Input"]["IdentifierRun"] == 158)]
     input_values = input_row.values.tolist()
     print("\nINPUT VALUES\n")
     for n, column_name in enumerate(list(input_row.columns)):
         print(f"{column_name}: {input_values[0][n]}")
 
-    output_row = data["Output"].loc[data["Input"]["Identifier"] == "ADA-117-158"]
+    output_row = data["Output"].loc[(data["Input"]["IdentifierType"] == "ADA") &
+                                    (data["Input"]["IdentifierScenario"] == 117) &
+                                    (data["Input"]["IdentifierRun"] == 158)]
     output_values = output_row.values.tolist()
     print("\nOUTPUT VALUES\n")
     for n, column_name in enumerate(list(output_row.columns)):

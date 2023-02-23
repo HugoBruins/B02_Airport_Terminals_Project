@@ -1,14 +1,12 @@
-import numpy as np
-
 import handle_data
 import matplotlib.pyplot as plt
+
 
 def generate_plots(average_data):
     total_passengers = average_data["Input"]["NumberPaxFlight1"] + average_data["Input"]["NumberPaxFlight2"] +\
                        average_data["Input"]["NumberPaxFlight3"] + average_data["Input"]["NumberPaxFlight4"] +\
                        average_data["Input"]["NumberPaxFlight5"] + average_data["Input"]["NumberPaxFlight6"] +\
                        average_data["Input"]["NumberPaxFlight7"]
-
 
     plt.scatter(total_passengers, average_data["Output"]["AvgQueueTimeCl"])
     plt.xlabel("Total passengers [-]")
@@ -40,17 +38,13 @@ def generate_plots(average_data):
     plt.savefig("plots\\Total passengers vs Number of Missed Flights.png")
     plt.close()
 
+
 if __name__ == '__main__':
-    print('test')
     # handle_data.folders_to_csv("logfiles", "logfiles.csv")
     data = handle_data.csv_to_dataframe("logfiles.csv")
 
     data = handle_data.manipulate_data(data)
+    data_avg = handle_data.average_data(data)
+    handle_data.manual_check_data(data)
 
-    average_data = handle_data.average_data(data)
-    generate_plots(average_data)
-
-
-
-
-    #handle_data.manual_check_data(data)
+    generate_plots(data_avg)
