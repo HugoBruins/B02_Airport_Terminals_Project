@@ -93,12 +93,23 @@ def manipulate_data(data: dict) -> dict:
     in the same format as the input dict
     """
     output_data = data["Output"]
+    input_data = data["Input"]
 
     avg_cl_time = (output_data["AvgQueueTime_Cl1"] + output_data["AvgQueueTime_Cl2"]
                    + output_data["AvgQueueTime_Cl3"] + output_data["AvgQueueTime_Cl4"]) / 4
     output_data = output_data.drop(["AvgQueueTime_Cl1", "AvgQueueTime_Cl2", "AvgQueueTime_Cl3", "AvgQueueTime_Cl4"],
                                    axis=1)
     output_data.insert(0, "AvgQueueTimeCl", avg_cl_time)
+
+    #Delete unnecessary columns
+    # same_vals = input_data.nunique() == 1 #Freya
+    # input_data = input_data.loc[:, ~same_vals]
+
+    for key in input_data.keys():
+    # Check the number of unique values in the column
+        if len(set(input_data[key])) == 1:
+            # If there's only one unique value, delete the column
+            del input_data[key]
 
     # Averaging maximum passengers in check in queue, and replacing the old columns with the average
     avg_cl_pax = (output_data["MaxPaxInQueue_Cl1"] + output_data["MaxPaxInQueue_Cl2"]
