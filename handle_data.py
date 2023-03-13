@@ -86,6 +86,52 @@ def csv_to_dataframe(filename: str) -> dict:
     return output
 
 
+def split_data(data: dict) -> (dict, dict, dict):
+    """
+    Split data, return training data (INI, ADA), validation data (HO), test data (VAL)
+    :param data: dictionary with input data
+    :return: split dataset in order (Training, Validation, Test) data
+    """
+    training_data = dict()
+    validation_data = dict()
+    test_data = dict()
+
+    training_data_df = pd.DataFrame()
+    validation_data_df = pd.DataFrame()
+
+    # Combine in and output to make it easier to work with
+    full_data = pd.concat([data["Output"], data["Input"]], axis=1)
+
+    # Split first by identifier-type (e.g. "INI"), then by the Scenario number to get the 255 runs
+    for scenario_type in full_data.groupby(full_data["IdentifierType"]):
+        type = scenario_type[0]
+        subset = scenario_type[1]
+        if type == "ADA" or type == "INI":
+            training_data_df = training_data_df.append(subset)
+
+        elif type == "HO":
+            validation_data_df = subset
+        elif type == "VAL":
+            test_data_df = subset
+
+    output_data = training_data_df.iloc[:, :training_data_df.columns.get_loc("Gui")]
+    input_data = training_data_df.iloc[:, training_data_df.columns.get_loc("Gui"):]
+    training_data["Input"] = input_data
+    training_data["Output"] = output_data
+
+    output_data = validation_data_df.iloc[:, :validation_data_df.columns.get_loc("Gui")]
+    input_data = validation_data_df.iloc[:, validation_data_df.columns.get_loc("Gui"):]
+    validation_data["Input"] = input_data
+    validation_data["Output"] = output_data
+
+    output_data = test_data_df.iloc[:, :test_data_df.columns.get_loc("Gui")]
+    input_data = test_data_df.iloc[:, test_data_df.columns.get_loc("Gui"):]
+    test_data["Input"] = input_data
+    test_data["Output"] = output_data
+
+    return training_data, validation_data, test_data
+
+
 def manipulate_data(data: dict) -> dict:
     """
     :param data: A dict containing in and output dataframes generated from the read_data_to_dataframe function
@@ -111,7 +157,6 @@ def manipulate_data(data: dict) -> dict:
             # If there's only one unique value, delete the column
             del input_data[key]
             
-    print("bonk")
     # Averaging maximum passengers in check in queue, and replacing the old columns with the average
     avg_cl_pax = (output_data["MaxPaxInQueue_Cl1"] + output_data["MaxPaxInQueue_Cl2"]
                   + output_data["MaxPaxInQueue_Cl3"] + output_data["MaxPaxInQueue_Cl4"]) / 4
