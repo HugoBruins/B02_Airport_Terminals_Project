@@ -110,7 +110,8 @@ def manipulate_data(data: dict) -> dict:
         if len(set(input_data[key])) == 1:
             # If there's only one unique value, delete the column
             del input_data[key]
-
+            
+    print("bonk")
     # Averaging maximum passengers in check in queue, and replacing the old columns with the average
     avg_cl_pax = (output_data["MaxPaxInQueue_Cl1"] + output_data["MaxPaxInQueue_Cl2"]
                   + output_data["MaxPaxInQueue_Cl3"] + output_data["MaxPaxInQueue_Cl4"]) / 4
