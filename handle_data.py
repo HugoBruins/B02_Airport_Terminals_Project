@@ -156,7 +156,8 @@ def manipulate_data(data: dict) -> dict:
         if len(set(input_data[key])) == 1:
             # If there's only one unique value, delete the column
             del input_data[key]
-            
+    input_data = input_data.drop(["IdentifierType", "IdentifierScenario", "IdentifierRun"], axis=1)
+    
     # Averaging maximum passengers in check in queue, and replacing the old columns with the average
     avg_cl_pax = (output_data["MaxPaxInQueue_Cl1"] + output_data["MaxPaxInQueue_Cl2"]
                   + output_data["MaxPaxInQueue_Cl3"] + output_data["MaxPaxInQueue_Cl4"]) / 4
@@ -165,6 +166,7 @@ def manipulate_data(data: dict) -> dict:
     output_data.insert(output_data.columns.get_loc("TotalExpenditure") + 1, "AvgMaxPaxInQueueCl", avg_cl_pax)
 
     data["Output"] = output_data
+    data["Input"] = input_data
     return data
 
 
