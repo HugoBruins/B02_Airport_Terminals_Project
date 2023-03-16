@@ -27,3 +27,5 @@ mse = mean_squared_error(test["Output"], y_pred)
 
 print(f"MSE : {mse}")
 
+print("Hugo")
+
