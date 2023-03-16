@@ -49,3 +49,4 @@ if __name__ == '__main__':
 
     print(data.keys())
     generate_plots(data_avg)
+    print("I am testing if it is smooth now to add changes to the main branch.")
