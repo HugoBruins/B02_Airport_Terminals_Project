@@ -1,7 +1,7 @@
 import handle_data
-from sklearn.datasets import load_boston
+#from sklearn.model import load_boston
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
 
@@ -26,9 +26,5 @@ y_pred = rf_clf.predict(test["Input"])
 mse = mean_squared_error(test["Output"], y_pred)
 
 print(f"MSE : {mse}")
-
-print("Hugo")
-print("Now you can see me")
-print("hello")
 
 
