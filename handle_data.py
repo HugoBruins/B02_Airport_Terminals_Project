@@ -153,7 +153,7 @@ def manipulate_data(data: dict) -> dict:
 
     for key in input_data.keys():
     # Check the number of unique values in the column
-        if len(set(input_data[key])) == 1:
+        if len(set(input_data[key])) == 1 and key != "IdentifierType":
             # If there's only one unique value, delete the column
             del input_data[key]
     input_data = input_data.drop(["IdentifierType", "IdentifierScenario", "IdentifierRun"], axis=1)
@@ -228,3 +228,5 @@ def manual_check_data(data: dict) -> None:
     for n, column_name in enumerate(list(output_row.columns)):
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
+
+print("Why, hello there")
