@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     data = handle_data.manipulate_data(data)
     # data_avg = handle_data.average_data(data)
-    handle_data.manual_check_data(data)
+    # handle_data.manual_check_data(data)
 
-    print(data.keys())
-    generate_plots(data_avg)
+    handle_data.remove_faulty(data, "TotalExpenditure")
+    generate_plots(data)

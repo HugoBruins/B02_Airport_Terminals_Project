@@ -156,6 +156,7 @@ def manipulate_data(data: dict) -> dict:
         if len(set(input_data[key])) == 1:
             # If there's only one unique value, delete the column
             del input_data[key]
+
     input_data = input_data.drop(["IdentifierType", "IdentifierScenario", "IdentifierRun"], axis=1)
     
     # Averaging maximum passengers in check in queue, and replacing the old columns with the average
@@ -228,5 +229,37 @@ def manual_check_data(data: dict) -> None:
     for n, column_name in enumerate(list(output_row.columns)):
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
+
+def remove_faulty(data: dict, variable):
+    list = data["Output"][variable]
+    data_amount = len(list)
+    use = list.sort_values(ascending = True)
+    data_amount_quart = data_amount / 4
+    IQR = use[3*data_amount_quart] - use[data_amount_quart]
+    whisker = 1.5 * IQR
+    acceptable_min = use[data_amount_quart] - whisker
+    acceptable_max = use[3*data_amount_quart] + whisker
+    data = data[data["Output"][variable] <= acceptable_max]
+    data = data[data["Output"][variable] >= acceptable_min]
+
+    for i in data["Output"][variable]:
+        if i > 2000:
+            print(i)
+
+    # Q1 = data["Output"][variable].quantile(0.25)
+    # Q3 = data["Output"][variable].quantile(0.75)
+    # IQR = Q3 - Q1    #IQR is interquartile range. 
+
+    # filter = (data["Output"][variable] >= Q1 - 1 * IQR) & (data["Output"][variable] <= Q3 + 1 *IQR)
+    # data["Output"][variable].loc[filter]
+
+    # for i in data["Output"][variable]:
+    #     if filter[i] == False:
+    #         print(i)
+    
+    
+    
+
+
 
 print("Why, hello there")
