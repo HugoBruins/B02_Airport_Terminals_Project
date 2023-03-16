@@ -21,9 +21,9 @@ fig.show()
 
 # for a 2D plot
 fig = px.scatter(df, x='CallToGateStrategy', y='TotalExpenditure',
-                labels={"CallToGateStrategy": "Call to Gate Strategy"
-                        "TotalExpenditure": "Total Expenditure"
-                        },
-                title="TITLE"
-                 )
+                    labels={"CallToGateStrategy": "Call to Gate Strategy",
+                            "TotalExpenditure": "Total Expenditure"
+                            },
+                    title="TITLE"
+                    )
 fig.show()

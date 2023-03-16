@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 #pulling and reading the file
 logfile= pd.read_csv('logfiles_averaged_scenarios.csv')
 df = pd.DataFrame(data=logfile)
-print(df)
+#print(df)
 
 corr_matrix = df.corr()
-sn.heatmap(corr_matrix, annot=True)
+plt.figure(figsize=(14,8))
+sn.heatmap(corr_matrix, cmap="Reds", annot=True)
+plt.title('Correlation Matrix', fontsize=16);
 plt.show()

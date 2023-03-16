@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="44661d2c-8fab-48a3-8597-06a07add0b8b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/B02_Airport_Terminals_Project.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/B02_Airport_Terminals_Project.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/corelation_matrix.py" beforeDir="false" afterPath="$PROJECT_DIR$/corelation_matrix.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/plot_results.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot_results.py" afterDir="false" />
@@ -39,7 +37,7 @@
     &quot;last_opened_file_path&quot;: &quot;/Users/me/Documents/GitHub/B02_Airport_Terminals_Project&quot;
   }
 }</component>
-  <component name="RunManager" selected="Python.plot_results">
+  <component name="RunManager" selected="Python.corelation_matrix">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
