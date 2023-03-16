@@ -225,3 +225,6 @@ def manual_check_data(data: dict) -> None:
     for n, column_name in enumerate(list(output_row.columns)):
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
+
+
+    print("test 123")
