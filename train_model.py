@@ -29,4 +29,6 @@ print(f"MSE : {mse}")
 
 print("Hugo")
 print("Now you can see me")
+print("hello")
+
 
