@@ -71,7 +71,7 @@ def csv_to_dataframe(filename: str) -> dict:
     start_time = time.time()
 
     output = dict()
-    data = pd.read_csv(filename, engine="pyarrow")
+    data = pd.read_csv(filename)
 
     # Remove all rows with NaN (e.g. the first scenario)
     data = data.dropna(axis=0).reset_index(drop=True)
