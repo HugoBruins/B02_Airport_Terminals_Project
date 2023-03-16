@@ -107,8 +107,7 @@ def split_data(data: dict) -> (dict, dict, dict):
         type = scenario_type[0]
         subset = scenario_type[1]
         if type == "ADA" or type == "INI":
-            training_data_df = training_data_df.append(subset)
-
+            training_data_df = pd.concat([training_data_df, subset], axis=0)
         elif type == "HO":
             validation_data_df = subset
         elif type == "VAL":
@@ -147,12 +146,9 @@ def manipulate_data(data: dict) -> dict:
                                    axis=1)
     output_data.insert(0, "AvgQueueTimeCl", avg_cl_time)
 
-    #Delete unnecessary columns
-    # same_vals = input_data.nunique() == 1 #Freya
-    # input_data = input_data.loc[:, ~same_vals]
-
+    # Delete unnecessary columns
     for key in input_data.keys():
-    # Check the number of unique values in the column
+        # Check the number of unique values in the column
         if len(set(input_data[key])) == 1 and key != "IdentifierType":
             # If there's only one unique value, delete the column
             del input_data[key]
@@ -164,6 +160,9 @@ def manipulate_data(data: dict) -> dict:
     output_data = output_data.drop(["MaxPaxInQueue_Cl1", "MaxPaxInQueue_Cl2", "MaxPaxInQueue_Cl3", "MaxPaxInQueue_Cl4"],
                                    axis=1)
     output_data.insert(output_data.columns.get_loc("TotalExpenditure") + 1, "AvgMaxPaxInQueueCl", avg_cl_pax)
+
+    # Removing Seed from output
+    output_data = output_data.drop(["Seed1"], axis=1)
 
     data["Output"] = output_data
     data["Input"] = input_data
@@ -228,5 +227,3 @@ def manual_check_data(data: dict) -> None:
     for n, column_name in enumerate(list(output_row.columns)):
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
-
-print("Why, hello there")
