@@ -236,26 +236,17 @@ def remove_faulty(data: dict, variable):
     use = list.sort_values(ascending = True)
     data_amount_quart = data_amount / 4
     IQR = use[3*data_amount_quart] - use[data_amount_quart]
-    whisker = 1.5 * IQR
+    whisker = 1.5 * IQR #To keep more values put 2*IQR or something else
     acceptable_min = use[data_amount_quart] - whisker
     acceptable_max = use[3*data_amount_quart] + whisker
-    data = data[data["Output"][variable] <= acceptable_max]
-    data = data[data["Output"][variable] >= acceptable_min]
 
-    for i in data["Output"][variable]:
-        if i > 2000:
-            print(i)
 
-    # Q1 = data["Output"][variable].quantile(0.25)
-    # Q3 = data["Output"][variable].quantile(0.75)
-    # IQR = Q3 - Q1    #IQR is interquartile range. 
+    data["Input"].drop(data["Output"][data['Output'][variable] >= acceptable_max].index, inplace = True)
+    data["Input"].drop(data["Output"][data['Output'][variable] <= acceptable_min].index, inplace = True)
+    data["Output"].drop(data["Output"][data['Output'][variable] >= acceptable_max].index, inplace = True)
+    data["Output"].drop(data["Output"][data['Output'][variable] <= acceptable_min].index, inplace = True)
 
-    # filter = (data["Output"][variable] >= Q1 - 1 * IQR) & (data["Output"][variable] <= Q3 + 1 *IQR)
-    # data["Output"][variable].loc[filter]
 
-    # for i in data["Output"][variable]:
-    #     if filter[i] == False:
-    #         print(i)
     
     
     
