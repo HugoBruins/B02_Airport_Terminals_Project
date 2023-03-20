@@ -8,12 +8,14 @@ import matplotlib.pyplot as plt
 logfile= pd.read_csv('logfiles_averaged_scenarios.csv')
 df = pd.DataFrame(data=logfile)
 
+#creating the heat map
 corr_matrix = df.corr()
-#plt.figure(figsize=(12,10))
 sn.heatmap(corr_matrix, cmap="Reds", linewidth=.5)
 
-plt.xticks([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],["Unnamed", "Avg. Que TimeCl", "Avg. Que TimeSC", "Avg. Time to Gate", "Pax. Check-In Compl.SC", "Pax. Check-In Compl.CL", "No. Missed Flights", "Total Expenditure", "Avg. Max Pax in QueCL", "Max Pax. in QueSC", "Seed 1", "Check-In Strat.", "Security Checkpoint Strat.", "Call to Gate Strat.", "No. Pax Missed Flights1", "No. Pax Missed Flights2", "No. Pax Missed Flights3", "No. Pax Missed Flights4", "No. Pax Missed Flights5", "No. Pax Missed Flights6", "No. Pax Missed Flights7", "Identifier Scenario", "Identifier Run"], rotation=45, ha='right', minor=False)
-plt.yticks([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],["Unnamed", "Avg. Que TimeCl", "Avg. Que TimeSC", "Avg. Time to Gate", "Pax. Check-In Compl.SC", "Pax. Check-In Compl.CL", "No. Missed Flights", "Total Expenditure", "Avg. Max Pax in QueCL", "Max Pax. in QueSC", "Seed 1", "Check-In Strat.", "Security Checkpoint Strat.", "Call to Gate Strat.", "No. Pax Missed Flights1", "No. Pax Missed Flights2", "No. Pax Missed Flights3", "No. Pax Missed Flights4", "No. Pax Missed Flights5", "No. Pax Missed Flights6", "No. Pax Missed Flights7", "Identifier Scenario", "Identifier Run"])
+#naming the ticks appropriately 
+plt.xticks([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],[" ", "Avg. Que TimeCl", "Avg. Que TimeSC", "Avg. Time to Gate", "Pax. Check-In Compl.SC", "Pax. Check-In Compl.CL", "No. Missed Flights", "Total Expenditure", "Avg. Max Pax in QueCL", "Max Pax. in QueSC", "Seed 1", "Check-In Strat.", "Security Checkpoint Strat.", "Call to Gate Strat.", "No. Pax Missed Flights1", "No. Pax Missed Flights2", "No. Pax Missed Flights3", "No. Pax Missed Flights4", "No. Pax Missed Flights5", "No. Pax Missed Flights6", "No. Pax Missed Flights7", "Identifier Scenario", "Identifier Run"], rotation=45, ha='right', minor=False)
+plt.yticks([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23],[" ", "Avg. Que TimeCl", "Avg. Que TimeSC", "Avg. Time to Gate", "Pax. Check-In Compl.SC", "Pax. Check-In Compl.CL", "No. Missed Flights", "Total Expenditure", "Avg. Max Pax in QueCL", "Max Pax. in QueSC", "Seed 1", "Check-In Strat.", "Security Checkpoint Strat.", "Call to Gate Strat.", "No. Pax Missed Flights1", "No. Pax Missed Flights2", "No. Pax Missed Flights3", "No. Pax Missed Flights4", "No. Pax Missed Flights5", "No. Pax Missed Flights6", "No. Pax Missed Flights7", "Identifier Scenario", "Identifier Run"])
 
-plt.title('Correlation Matrix', fontsize=16)
+#plotting the graph
+plt.title('Correlation Matrix for Averaged Scenarios', fontsize=16)
 plt.show()
