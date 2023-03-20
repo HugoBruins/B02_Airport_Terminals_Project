@@ -11,15 +11,13 @@ target = df['amount'].values
 X_train, X_test, y_train, y_test = train_test_split(features, target,
 test_size = 0.3, random_state = 42)
 
-from sklearn.ensemblefrom sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor
+
 #Initiliazing an Random Forest Regressor with default parameters
 rf_reg = RandomForestRegressor(max_depth = 10, min_samples_leaf = 0.2,
 random_state = 50)
+
 #Fitting the regressor on the training data
 rf_reg.fit(X_train, y_train)
- import RandomForestRegressor
-#Initiliazing an Random Forest Regressor with default parameters
-rf_reg = RandomForestRegressor(max_depth = 10, min_samples_leaf = 0.2,
-random_state = 50)
-#Fitting the regressor on the training data
-rf_reg.fit(X_train, y_train)
+import RandomForestRegressor
+
