@@ -226,14 +226,22 @@ def manual_check_data(data: dict) -> None:
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 def remove_faulty(data: dict, variable):
     full_data = pd.concat([data["Output"], data["Input"]], axis=1)
     group = ["INI", "ADA", "VAL"]
 
     for j in range(len(group)):
+<<<<<<< Updated upstream
         for i in range(98):
             df = full_data[(full_data['IdentifierScenario'] == i+1) & (full_data['IdentifierType'] == group[j])]
+=======
+        for i in range(99):
+            df = full_data[(full_data['IdentifierScenario'] == i) & (full_data['IdentifierType'] == group[j])]
+>>>>>>> Stashed changes
             list = df[variable]
             use = list.sort_values(ascending = True)
             data_amount = len(list)
@@ -244,6 +252,7 @@ def remove_faulty(data: dict, variable):
             whisker = 1.5 * IQR  # To keep more values put 2*IQR or something else
             acceptable_min = use[use.index[int(data_amount_quart)]] - whisker
             acceptable_max = use[use.index[3* int(data_amount_quart)]] + whisker
+<<<<<<< Updated upstream
             full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group[j]))]
             full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group[j]))]
 
@@ -264,3 +273,16 @@ def remove_faulty(data: dict, variable):
 
 
 print("Why, hello there")
+=======
+            full_data = full_data[~((full_data['IdentifierScenario'] == i) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group[j]))]
+            full_data = full_data[~((full_data['IdentifierScenario'] == i) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group[j]))]
+    output_data = full_data.iloc[:, :full_data.columns.get_loc("Gui")]
+    input_data = full_data.iloc[:, full_data.columns.get_loc("Gui"):]
+
+    output["Input"] = input_data
+    output["Output"] = output_data
+
+    return output
+# def main(filename: str, check_in_strat_filename: str, security_strat_filename: str) -> dict, dict, dict:
+#     pass
+>>>>>>> Stashed changes
