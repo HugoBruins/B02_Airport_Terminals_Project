@@ -86,6 +86,44 @@ def csv_to_dataframe(filename: str) -> dict:
     return output
 
 
+def strategies(data: dict, check_in_strat_mame: str, security_strat_name: str, include_checkin, include_security, replace) -> dict:
+    """
+    Encode the strategy numbers for check in and security so the model has more information to train on.
+
+    The check in strategy numbers correspond to the amount of check in desks open at a certain time. The times mentioned
+    in the columns is the time before departure of flight.
+
+    The security strategy correspond to how many security lanes are open at different times of the simulation. The column
+    names correspond to the simulation time intervals.
+
+    :param data: The dataset to replace in
+    :param check_in_strat_mame: The name of the csv file containing the check in strategies
+    :param security_strat_name: The name of the csv file containing the security strategies
+    :param include_checkin: True -> The checkin strategy table is merged, False -> the check in strategies will remain
+    as they were.
+    :param include_security: True -> The security strategy table is merged, False -> the security strategies will remain
+    as they were.
+    :param replace: True -> Replace the original column with the more detailed column, False -> Leave the original column
+    in place.
+    :return: The same dataset as the beginning but containing the columns corresponding to the strategies.
+    """
+
+    data_input = data["Input"]
+    if include_checkin:
+        check_in_strat_table = pd.read_csv(check_in_strat_mame)
+        data_input = data_input.merge(check_in_strat_table, how="left", on="CheckInStrategy")
+        if replace:
+            data_input = data_input.drop(["CheckInStrategy"], axis=1)
+    if include_security:
+        security_strat_table = pd.read_csv(security_strat_name)
+        data_input = data_input.merge(security_strat_table, how="left", on="SecurityCheckpointStrategy")
+        if replace:
+            data_input = data_input.drop(["SecurityCheckpointStrategy"], axis=1)
+
+    data["Input"] = data_input
+    return data
+
+
 def split_data(data: dict) -> (dict, dict, dict):
     """
     Split data, return training data (INI, ADA), validation data (HO), test data (VAL)
@@ -210,6 +248,7 @@ def manual_check_data(data: dict) -> None:
     :param data: dataframe to compare
     :return: None
     """
+    print(data["Input"].shape, data["Output"].shape)
     print("[DEBUG] Begin of manual data check, you can compare these values with what is in the powerpoint")
     input_row = data["Input"].loc[(data["Input"]["IdentifierType"] == "ADA") &
                                   (data["Input"]["IdentifierScenario"] == 117) &
@@ -220,10 +259,13 @@ def manual_check_data(data: dict) -> None:
         print(f"{column_name}: {input_values[0][n]}")
 
     output_row = data["Output"].loc[(data["Input"]["IdentifierType"] == "ADA") &
-                                    (data["Input"]["IdentifierScenario"] == 117) &
-                                    (data["Input"]["IdentifierRun"] == 158)]
+                                  (data["Input"]["IdentifierScenario"] == 117) &
+                                  (data["Input"]["IdentifierRun"] == 158)]
     output_values = output_row.values.tolist()
     print("\nOUTPUT VALUES\n")
     for n, column_name in enumerate(list(output_row.columns)):
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
+
+# def main(filename: str, check_in_strat_filename: str, security_strat_filename: str) -> dict, dict, dict:
+#     pass
