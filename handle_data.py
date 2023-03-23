@@ -2,12 +2,11 @@ import os
 import time
 import pandas as pd
 import re
-
+from math import ceil
 
 def folders_to_csv(folder_name: str, file_name: str) -> None:
     """
     Generates a single csv file from all the read input data, including header
-
     :param folder_name: The name of the folder where the data should be read from
     :param file_name: The name of the output csv file
     :return: None
@@ -63,7 +62,6 @@ def csv_to_dataframe(filename: str) -> dict:
     """
     Converts the csv to a dictionary with on "Input" a dataframe with all the input parameters and on "Output" a
     dataframe containing all the output parameters
-
     :param filename: The name of the (csv) file to read
     :return: A dictionary containing the input and output data with correctly named headers
     """
@@ -147,16 +145,18 @@ def manipulate_data(data: dict) -> dict:
                                    axis=1)
     output_data.insert(0, "AvgQueueTimeCl", avg_cl_time)
 
-    #Delete unnecessary columns
+    # Delete unnecessary columns
     # same_vals = input_data.nunique() == 1 #Freya
     # input_data = input_data.loc[:, ~same_vals]
 
     for key in input_data.keys():
-    # Check the number of unique values in the column
+        # Check the number of unique values in the column
         if len(set(input_data[key])) == 1:
             # If there's only one unique value, delete the column
             del input_data[key]
-            
+
+    input_data = input_data.drop(["IdentifierType", "IdentifierScenario", "IdentifierRun"], axis=1)
+
     # Averaging maximum passengers in check in queue, and replacing the old columns with the average
     avg_cl_pax = (output_data["MaxPaxInQueue_Cl1"] + output_data["MaxPaxInQueue_Cl2"]
                   + output_data["MaxPaxInQueue_Cl3"] + output_data["MaxPaxInQueue_Cl4"]) / 4
@@ -165,6 +165,7 @@ def manipulate_data(data: dict) -> dict:
     output_data.insert(output_data.columns.get_loc("TotalExpenditure") + 1, "AvgMaxPaxInQueueCl", avg_cl_pax)
 
     data["Output"] = output_data
+    data["Input"] = input_data
     return data
 
 
@@ -172,7 +173,6 @@ def average_data(data: dict) -> dict:
     """
     There are 500 scenarios with each 256 runs, this function aims to average out the runs to get a reduced dataset
     with only 500 rows instead of 500*256
-
     :param data: dataset
     :return: reduced dataset
     """
@@ -205,7 +205,6 @@ def manual_check_data(data: dict) -> None:
     """
     This function will print the column name and the respective value in the exact same row as the
     instructive PowerPoint listed, which can be used to cross validate data changes
-
     :param data: dataframe to compare
     :return: None
     """
@@ -226,3 +225,42 @@ def manual_check_data(data: dict) -> None:
     for n, column_name in enumerate(list(output_row.columns)):
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
+
+
+def remove_faulty(data: dict, variable):
+    full_data = pd.concat([data["Output"], data["Input"]], axis=1)
+    group = ["INI", "ADA", "VAL"]
+
+    for j in range(len(group)):
+        for i in range(98):
+            df = full_data[(full_data['IdentifierScenario'] == i+1) & (full_data['IdentifierType'] == group[j])]
+            list = df[variable]
+            use = list.sort_values(ascending = True)
+            data_amount = len(list)
+            data_amount_quart = int(data_amount / 4)
+
+            IQR = use[use.index[3* int(data_amount_quart)]] - use[use.index[int(data_amount_quart)]]
+
+            whisker = 1.5 * IQR  # To keep more values put 2*IQR or something else
+            acceptable_min = use[use.index[int(data_amount_quart)]] - whisker
+            acceptable_max = use[use.index[3* int(data_amount_quart)]] + whisker
+            full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group[j]))]
+            full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group[j]))]
+
+    print(full_data)
+    # list = data["Output"][variable]
+    # data_amount = len(list)
+    # use = list.sort_values(ascending=True)
+    # data_amount_quart = data_amount / 4
+    # IQR = use[3 * data_amount_quart] - use[data_amount_quart]
+    # whisker = 1.5 * IQR  # To keep more values put 2*IQR or something else
+    # acceptable_min = use[data_amount_quart] - whisker
+    # acceptable_max = use[3 * data_amount_quart] + whisker
+    #
+    # data["Input"].drop(data["Output"][data['Output'][variable] >= acceptable_max].index, inplace=True)
+    # data["Input"].drop(data["Output"][data['Output'][variable] <= acceptable_min].index, inplace=True)
+    # data["Output"].drop(data["Output"][data['Output'][variable] >= acceptable_max].index, inplace=True)
+    # data["Output"].drop(data["Output"][data['Output'][variable] <= acceptable_min].index, inplace=True)
+
+
+print("Why, hello there")
