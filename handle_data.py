@@ -2,11 +2,12 @@ import os
 import time
 import pandas as pd
 import re
-from math import ceil
+
 
 def folders_to_csv(folder_name: str, file_name: str) -> None:
     """
     Generates a single csv file from all the read input data, including header
+
     :param folder_name: The name of the folder where the data should be read from
     :param file_name: The name of the output csv file
     :return: None
@@ -62,6 +63,7 @@ def csv_to_dataframe(filename: str) -> dict:
     """
     Converts the csv to a dictionary with on "Input" a dataframe with all the input parameters and on "Output" a
     dataframe containing all the output parameters
+
     :param filename: The name of the (csv) file to read
     :return: A dictionary containing the input and output data with correctly named headers
     """
@@ -82,6 +84,44 @@ def csv_to_dataframe(filename: str) -> dict:
     output["Output"] = output_data
     print(f"[DEBUG] Finished reading logfiles.csv into dataframe after {time.time() - start_time} seconds")
     return output
+
+
+def strategies(data: dict, check_in_strat_mame: str, security_strat_name: str, include_checkin, include_security, replace) -> dict:
+    """
+    Encode the strategy numbers for check in and security so the model has more information to train on.
+
+    The check in strategy numbers correspond to the amount of check in desks open at a certain time. The times mentioned
+    in the columns is the time before departure of flight.
+
+    The security strategy correspond to how many security lanes are open at different times of the simulation. The column
+    names correspond to the simulation time intervals.
+
+    :param data: The dataset to replace in
+    :param check_in_strat_mame: The name of the csv file containing the check in strategies
+    :param security_strat_name: The name of the csv file containing the security strategies
+    :param include_checkin: True -> The checkin strategy table is merged, False -> the check in strategies will remain
+    as they were.
+    :param include_security: True -> The security strategy table is merged, False -> the security strategies will remain
+    as they were.
+    :param replace: True -> Replace the original column with the more detailed column, False -> Leave the original column
+    in place.
+    :return: The same dataset as the beginning but containing the columns corresponding to the strategies.
+    """
+
+    data_input = data["Input"]
+    if include_checkin:
+        check_in_strat_table = pd.read_csv(check_in_strat_mame)
+        data_input = data_input.merge(check_in_strat_table, how="left", on="CheckInStrategy")
+        if replace:
+            data_input = data_input.drop(["CheckInStrategy"], axis=1)
+    if include_security:
+        security_strat_table = pd.read_csv(security_strat_name)
+        data_input = data_input.merge(security_strat_table, how="left", on="SecurityCheckpointStrategy")
+        if replace:
+            data_input = data_input.drop(["SecurityCheckpointStrategy"], axis=1)
+
+    data["Input"] = data_input
+    return data
 
 
 def split_data(data: dict) -> (dict, dict, dict):
@@ -105,8 +145,7 @@ def split_data(data: dict) -> (dict, dict, dict):
         type = scenario_type[0]
         subset = scenario_type[1]
         if type == "ADA" or type == "INI":
-            training_data_df = training_data_df.append(subset)
-
+            training_data_df = pd.concat([training_data_df, subset], axis=0)
         elif type == "HO":
             validation_data_df = subset
         elif type == "VAL":
@@ -146,23 +185,22 @@ def manipulate_data(data: dict) -> dict:
     output_data.insert(0, "AvgQueueTimeCl", avg_cl_time)
 
     # Delete unnecessary columns
-    # same_vals = input_data.nunique() == 1 #Freya
-    # input_data = input_data.loc[:, ~same_vals]
-
     for key in input_data.keys():
         # Check the number of unique values in the column
-        if len(set(input_data[key])) == 1:
+        if len(set(input_data[key])) == 1 and key != "IdentifierType":
             # If there's only one unique value, delete the column
             del input_data[key]
-
     input_data = input_data.drop(["IdentifierType", "IdentifierScenario", "IdentifierRun"], axis=1)
-
+    
     # Averaging maximum passengers in check in queue, and replacing the old columns with the average
     avg_cl_pax = (output_data["MaxPaxInQueue_Cl1"] + output_data["MaxPaxInQueue_Cl2"]
                   + output_data["MaxPaxInQueue_Cl3"] + output_data["MaxPaxInQueue_Cl4"]) / 4
     output_data = output_data.drop(["MaxPaxInQueue_Cl1", "MaxPaxInQueue_Cl2", "MaxPaxInQueue_Cl3", "MaxPaxInQueue_Cl4"],
                                    axis=1)
     output_data.insert(output_data.columns.get_loc("TotalExpenditure") + 1, "AvgMaxPaxInQueueCl", avg_cl_pax)
+
+    # Removing Seed from output
+    output_data = output_data.drop(["Seed1"], axis=1)
 
     data["Output"] = output_data
     data["Input"] = input_data
@@ -173,6 +211,7 @@ def average_data(data: dict) -> dict:
     """
     There are 500 scenarios with each 256 runs, this function aims to average out the runs to get a reduced dataset
     with only 500 rows instead of 500*256
+
     :param data: dataset
     :return: reduced dataset
     """
@@ -205,9 +244,11 @@ def manual_check_data(data: dict) -> None:
     """
     This function will print the column name and the respective value in the exact same row as the
     instructive PowerPoint listed, which can be used to cross validate data changes
+
     :param data: dataframe to compare
     :return: None
     """
+    print(data["Input"].shape, data["Output"].shape)
     print("[DEBUG] Begin of manual data check, you can compare these values with what is in the powerpoint")
     input_row = data["Input"].loc[(data["Input"]["IdentifierType"] == "ADA") &
                                   (data["Input"]["IdentifierScenario"] == 117) &
@@ -218,30 +259,40 @@ def manual_check_data(data: dict) -> None:
         print(f"{column_name}: {input_values[0][n]}")
 
     output_row = data["Output"].loc[(data["Input"]["IdentifierType"] == "ADA") &
-                                    (data["Input"]["IdentifierScenario"] == 117) &
-                                    (data["Input"]["IdentifierRun"] == 158)]
+                                  (data["Input"]["IdentifierScenario"] == 117) &
+                                  (data["Input"]["IdentifierRun"] == 158)]
     output_values = output_row.values.tolist()
     print("\nOUTPUT VALUES\n")
     for n, column_name in enumerate(list(output_row.columns)):
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
 
-<<<<<<< Updated upstream
+# def main(filename: str, check_in_strat_filename: str, security_strat_filename: str) -> dict, dict, dict:
+#     pass
 
-=======
->>>>>>> Stashed changes
-def remove_faulty(data: dict, variable):
+def remove_faulty(data: dict, variable, k, group):
+    """
+    This function will print the column name and the respective value in the exact same row as the
+    instructive PowerPoint listed, which can be used to cross validate data changes
+
+    :param data: dataframe to compare, variable: the output parameter that we are deleting data from, k: parameter of how much data to delete (1.5), group: list of data-types (ADA etc.)
+    :return: Dataset without outliers
+    """
+
     full_data = pd.concat([data["Output"], data["Input"]], axis=1)
-    group = ["INI", "ADA", "VAL"]
 
     for j in range(len(group)):
-<<<<<<< Updated upstream
-        for i in range(98):
+        part_data = full_data[(full_data['IdentifierType'] == group[j])]
+        # length = len(part_data)
+        # print(length)
+        # for key in full_data.keys():
+        #     # Check the number of unique values in the column
+        #     if len(set(input_data[key])) == 1 and key != "IdentifierType":
+        #         # If there's only one unique value, delete the column
+        #         del input_data[key]
+        length = len(set(part_data['IdentifierScenario']))
+        for i in range(length-1):
             df = full_data[(full_data['IdentifierScenario'] == i+1) & (full_data['IdentifierType'] == group[j])]
-=======
-        for i in range(99):
-            df = full_data[(full_data['IdentifierScenario'] == i) & (full_data['IdentifierType'] == group[j])]
->>>>>>> Stashed changes
             list = df[variable]
             use = list.sort_values(ascending = True)
             data_amount = len(list)
@@ -249,40 +300,15 @@ def remove_faulty(data: dict, variable):
 
             IQR = use[use.index[3* int(data_amount_quart)]] - use[use.index[int(data_amount_quart)]]
 
-            whisker = 1.5 * IQR  # To keep more values put 2*IQR or something else
+            whisker = k * IQR  # To keep more values put 2*IQR or something else
             acceptable_min = use[use.index[int(data_amount_quart)]] - whisker
             acceptable_max = use[use.index[3* int(data_amount_quart)]] + whisker
-<<<<<<< Updated upstream
             full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group[j]))]
             full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group[j]))]
-
-    print(full_data)
-    # list = data["Output"][variable]
-    # data_amount = len(list)
-    # use = list.sort_values(ascending=True)
-    # data_amount_quart = data_amount / 4
-    # IQR = use[3 * data_amount_quart] - use[data_amount_quart]
-    # whisker = 1.5 * IQR  # To keep more values put 2*IQR or something else
-    # acceptable_min = use[data_amount_quart] - whisker
-    # acceptable_max = use[3 * data_amount_quart] + whisker
-    #
-    # data["Input"].drop(data["Output"][data['Output'][variable] >= acceptable_max].index, inplace=True)
-    # data["Input"].drop(data["Output"][data['Output'][variable] <= acceptable_min].index, inplace=True)
-    # data["Output"].drop(data["Output"][data['Output'][variable] >= acceptable_max].index, inplace=True)
-    # data["Output"].drop(data["Output"][data['Output'][variable] <= acceptable_min].index, inplace=True)
-
-
-print("Why, hello there")
-=======
-            full_data = full_data[~((full_data['IdentifierScenario'] == i) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group[j]))]
-            full_data = full_data[~((full_data['IdentifierScenario'] == i) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group[j]))]
     output_data = full_data.iloc[:, :full_data.columns.get_loc("Gui")]
     input_data = full_data.iloc[:, full_data.columns.get_loc("Gui"):]
-
+    output = dict()
     output["Input"] = input_data
     output["Output"] = output_data
-
+    print(output_data)
     return output
-# def main(filename: str, check_in_strat_filename: str, security_strat_filename: str) -> dict, dict, dict:
-#     pass
->>>>>>> Stashed changes
