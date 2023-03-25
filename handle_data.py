@@ -267,8 +267,10 @@ def manual_check_data(data: dict) -> None:
         print(f"{column_name}: {output_values[0][n]}")
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
 
+
 # def main(filename: str, check_in_strat_filename: str, security_strat_filename: str) -> dict, dict, dict:
 #     pass
+
 
 def remove_faulty(data: dict, variable, k, group):
     """

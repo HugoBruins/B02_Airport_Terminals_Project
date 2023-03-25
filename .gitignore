@@ -1,0 +1,5 @@
+.idea/*
+__pycache__/
+logfiles/
+plots/
+.DS_Store
