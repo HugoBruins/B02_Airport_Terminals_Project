@@ -1,7 +1,10 @@
 import os
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 import re
+
 
 
 def folders_to_csv(folder_name: str, file_name: str) -> None:
@@ -314,3 +317,21 @@ def remove_faulty(data: dict, variable, k, group):
     output["Output"] = output_data
     print(output_data)
     return output
+
+def make_sample_boxplot(data: dict, type, scenario, variable, factor):
+    full_data = pd.concat([data["Output"], data["Input"]], axis=1)
+    part_data = full_data[(full_data['IdentifierType'] == type) & (full_data['IdentifierScenario'] == scenario)]
+    plt.xlabel('Data Set ' + str(type) + ', Scenario ' + str(scenario))
+    ylabelwords = re.findall('[A-Z][^A-Z]*', variable)
+    ylabel = ''
+    for i in range(len(ylabelwords)):
+        ylabel= ylabel + ylabelwords[i]
+        if i == len(ylabelwords):
+            break
+        ylabel = ylabel + " "
+
+    plt.ylabel(ylabel)
+    plt.boxplot(part_data[variable], whis=factor)
+    plt.savefig('SampleBoxplot.png')
+
+
