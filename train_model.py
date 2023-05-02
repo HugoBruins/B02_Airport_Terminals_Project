@@ -143,14 +143,19 @@ def plot_history(history, name):
     plt.show()
 
 
-def rf_model(n_estimators, max_depth, min_samples_split, min_samples_leaf):
+def rf_model(n_estimators, max_depth, min_samples_split, min_samples_leaf, bootstrap):
     params_rf = {}
     params_rf['n_estimators'] = round(n_estimators)
     params_rf['max_depth'] = round(max_depth)
     params_rf['min_samples_split'] = round(min_samples_split)
     params_rf['min_samples_leaf'] = round(min_samples_leaf)
     params_rf['max_features'] = None
-    params_rf['bootstrap'] = False
+    bootstrap = round(bootstrap)
+
+    if bootstrap == 1:
+        params_rf['bootstrap'] = True
+    else:
+        params_rf['bootstrap'] = False
 
     model = RandomForestRegressor(**params_rf, random_state=0)
     model.fit(training["Input"], training["Output"]["TotalExpenditure"])
@@ -163,10 +168,13 @@ def tune_hyperparamaters_bayes(
         val):  # (https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
     # Number of trees in random forest (initial range from: https://mljar.com/blog/how-many-trees-in-random-forest/)
     params = dict()
-    params['n_estimators'] = (1, 100)
+    params['n_estimators'] = (1,200)
     params['max_depth'] = (1, 100)
     params['min_samples_split'] = (2, 20)
     params['min_samples_leaf'] = (1, 20)
+    params['bootstrap'] = (0, 1)
+
+
 
     #grid = {'min_weight_fraction_leaf': Real(0, 0.5)}
 
