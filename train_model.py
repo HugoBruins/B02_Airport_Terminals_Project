@@ -51,7 +51,7 @@ def test_model(models, test):
             f"\t\t\t{mean_real}\n")
 
 
-def hyperparamaters_main(val):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
+def hyperparamaters_main(training, val):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
     # Number of trees in random forest (initial range from: https://mljar.com/blog/how-many-trees-in-random-forest/)
     n_estimators = list(np.arange(1, 50, 1))  # start = 200, stop = 2000, num = 10
     # Number of features to consider at every split
@@ -83,15 +83,19 @@ def hyperparamaters_main(val):  #(https://towardsdatascience.com/hyperparameter-
     previous_parameters = copy.deepcopy(initial_parameters)
     number_of_iterations = 2
     keys = list(initial_parameters.keys())
+
+    # For each iteration as specified above
     for i in range(number_of_iterations):
         print(f'starting iteration {i+1}...')
         current_parameters = previous_parameters
+        # Remove a parameter, find the optimal one using the function, put it back
         for key in keys:
             print(f'optimizing {key} in iteration {i+1}...')
             current_parameters.pop(key)
-            new_value = optimize_parameter(key, test_ranges[key], current_parameters, training, val)
+            new_value = hyperparameter_optimize_parameter(key, test_ranges[key], current_parameters, training, val)
             current_parameters[key] = new_value
         previous_parameters = current_parameters
+    # The best parameters ar the most recent ones
     best_parameters = previous_parameters
     return best_parameters
 
@@ -99,13 +103,14 @@ def hyperparamaters_main(val):  #(https://towardsdatascience.com/hyperparameter-
 def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, current_parameters, training, val):
     history = []
     for test_parameter_value in test_parameter_range:
+        # put the test parameter back from where it was removed in the other function
         current_parameters[test_parameter_key] = test_parameter_value
         # Create a random forest classifier object
         rf_clf = RandomForestRegressor(**current_parameters)
 
         # Train the random forest classifier on the training data
         rf_clf.fit(training['Input'], training["Output"]["AvgTimeToGate"])
-        mse = evaluate_accuracy(rf_clf, val)
+        mse = hyperparameters_evaluate_accuracy(rf_clf, val)
         print(f'{current_parameters}\nmse:{mse}')
         history.append([test_parameter_value, mse])
     min_error = min([x[1] for x in history])
@@ -114,8 +119,7 @@ def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, 
             optimal_parameter = sublist[0]
             break
     print(f"Found optimal parameter {test_parameter_key} value of {optimal_parameter} with error {min_error}")
-    print(history)
-    plot_history(history, test_parameter_key)
+    hyperparameters_plot_history(history, test_parameter_key)
     return optimal_parameter
 
 
@@ -140,8 +144,8 @@ def hyperparameters_plot_history(history, name):
 
 
 def main():
-    training, val, test = import_data()
-    hyperparameters = hyperparamaters_main(val)
+    training, val, test = import_data_main()
+    hyperparameters = hyperparamaters_main(training, val)
     print(hyperparameters)
     # hyperparameters = {'n_estimators': 355, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 200, 'bootstrap': False}
     #models = train_model(training, hyperparameters)
