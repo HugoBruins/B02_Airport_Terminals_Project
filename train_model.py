@@ -105,15 +105,17 @@ def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, 
     for test_parameter_value in test_parameter_range:
         # put the test parameter back from where it was removed in the other function
         current_parameters[test_parameter_key] = test_parameter_value
-        # Create a random forest classifier object
+        # train a model on training data with the current fixed parameters and the variable parameter
         rf_clf = RandomForestRegressor(**current_parameters)
-
-        # Train the random forest classifier on the training data
         rf_clf.fit(training['Input'], training["Output"]["AvgTimeToGate"])
+        # compute the error for these parameters using validation data
         mse = hyperparameters_evaluate_accuracy(rf_clf, val)
         print(f'{current_parameters}\nmse:{mse}')
+        # append the current variable parameter and error [parameter, error] to history
         history.append([test_parameter_value, mse])
+    # find the value of the minimum error
     min_error = min([x[1] for x in history])
+    # find the parameter that this minimum error corresponds to
     for sublist in history:
         if sublist[1] == min_error:
             optimal_parameter = sublist[0]
