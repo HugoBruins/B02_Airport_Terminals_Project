@@ -2,6 +2,7 @@ import handle_data
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
+from sklearn.linear_model import LinearRegression
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
@@ -51,14 +52,13 @@ def test_model(models, test):
             f"\t\t\t{mean_real}\n")
 
 
-def hyperparamaters_main(training, val):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
+def hyperparamaters_main(training, val, patience, increment_percentage):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
     # Number of trees in random forest (initial range from: https://mljar.com/blog/how-many-trees-in-random-forest/)
-    n_estimators = list(np.arange(1, 50, 1))  # start = 200, stop = 2000, num = 10
+    n_estimators = list(np.arange(1, 31, 5))  # start = 200, stop = 2000, num = 10
     # Number of features to consider at every split
     max_features = ['auto', 'sqrt']
     # Maximum number of levels in tree
     max_depth = list(np.arange(1, 151, 25, dtype=int))
-    max_depth.append(None)
     # Minimum number of samples required to split a node
     min_samples_split = [2, 5, 10]
     # Minimum number of samples required at each leaf node (https://www.analyticsvidhya.com/blog/2015/06/tuning-random-forest-model/)
@@ -75,7 +75,7 @@ def hyperparamaters_main(training, val):  #(https://towardsdatascience.com/hyper
 
     initial_parameters = {'n_estimators': 100,
                           'max_features': 1.0,
-                          'max_depth': None,
+                          'max_depth': 50,
                           'min_samples_split': 2,
                           'min_samples_leaf': 1,
                           'bootstrap': True}
@@ -92,17 +92,42 @@ def hyperparamaters_main(training, val):  #(https://towardsdatascience.com/hyper
         for key in keys:
             print(f'optimizing {key} in iteration {i+1}...')
             current_parameters.pop(key)
-            new_value = hyperparameter_optimize_parameter(key, test_ranges[key], current_parameters, training, val)
+            new_value, slope_is_positive = hyperparameter_optimize_parameter(key, test_ranges[key], current_parameters, training, val, patience)
             current_parameters[key] = new_value
+            # if error slope of previous iteration was postive shift to right, else to left
+            try:
+                increment = round((test_ranges[key][-1] - test_ranges[key][0]) * (increment_percentage / 100))
+                step_size = test_ranges[key][-1] - test_ranges[key][-2]
+                if slope_is_positive:
+                    new_max = new_value + increment
+                    new_min = new_max - (test_ranges[key][-1] - test_ranges[key][0])
+                else:
+                    new_min = new_value - increment
+                    new_max = new_min + (test_ranges[key][-1] - test_ranges[key][0])
+                print(increment)
+                print(test_ranges[key][0], test_ranges[key][-1])
+                print(new_min, new_max)
+
+                if new_min < 0:
+                    new_min = 1
+                test_ranges[key] = np.arange(new_min, new_max, step_size)
+
+            except Exception as e:
+                print(e)
+            print(test_ranges)
+
         previous_parameters = current_parameters
     # The best parameters ar the most recent ones
     best_parameters = previous_parameters
     return best_parameters
 
 
-def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, current_parameters, training, val):
+def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, current_parameters, training, val, patience):
+    patience_counter = 0  # Number of times the error curve shoots up
     history = []
-    for test_parameter_value in test_parameter_range:
+    for index, test_parameter_value in enumerate(test_parameter_range):
+        if patience_counter > patience:
+            break
         # put the test parameter back from where it was removed in the other function
         current_parameters[test_parameter_key] = test_parameter_value
         # train a model on training data with the current fixed parameters and the variable parameter
@@ -112,6 +137,9 @@ def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, 
         mse = hyperparameters_evaluate_accuracy(rf_clf, val)
         print(f'{current_parameters}\nmse:{mse}')
         # append the current variable parameter and error [parameter, error] to history
+        if index != 0:
+            if mse > history[-1][1]:  # If error > previous_error and not on first iteration, count up patience counter
+                patience_counter += 1
         history.append([test_parameter_value, mse])
     # find the value of the minimum error
     min_error = min([x[1] for x in history])
@@ -122,7 +150,26 @@ def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, 
             break
     print(f"Found optimal parameter {test_parameter_key} value of {optimal_parameter} with error {min_error}")
     hyperparameters_plot_history(history, test_parameter_key)
-    return optimal_parameter
+
+    # compute if the error function is decreasing or increasing in this iteration
+    linear_regression_model = LinearRegression()
+    x = []
+    y = []
+    for item in history:
+        x.append([item[0]])
+        y.append(item[1])
+    try:
+        linear_regression_model.fit(x, y)
+        slope = linear_regression_model.coef_
+        slope_is_positive = False
+        if slope[0] > 0:
+            slope_is_positive = True
+        print('marker')
+        print(slope)
+    except Exception as e:
+        slope_is_positive = True
+        print(e)
+    return optimal_parameter, slope_is_positive
 
 
 def hyperparameters_evaluate_accuracy(rf_clf, val):
@@ -147,10 +194,40 @@ def hyperparameters_plot_history(history, name):
 
 def main():
     training, val, test = import_data_main()
-    hyperparameters = hyperparamaters_main(training, val)
+    hyperparameters = hyperparamaters_main(training, val, 20, 10)  #input: training data, val data, patience, increment_percentage
+
     print(hyperparameters)
     # hyperparameters = {'n_estimators': 355, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 200, 'bootstrap': False}
     #models = train_model(training, hyperparameters)
     #test_model(models, test)
+    """""
+    1.
+    Order
+    importance
+    2.
+    Implement
+    max.up
+    tolerance
 
+    3.
+    Implement
+    move
+    range
+    to
+    left / right & remove
+    outliers
+
+    4.
+    Implement
+    max.iterations
+    5.
+    Implement
+    max.time
+
+    6.
+    Plot
+    min
+    error
+    between
+    iterations"""""
 main()
