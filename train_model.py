@@ -5,8 +5,10 @@ from sklearn.metrics import mean_absolute_error
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+import skopt
 from skopt import BayesSearchCV
 from skopt.space import Real, Categorical, Integer, Space
+from bayes_opt import BayesianOptimization
 
 
 def import_data():
@@ -141,10 +143,31 @@ def plot_history(history, name):
     plt.show()
 
 
+def rf_model(n_estimators, max_depth, min_samples_split, min_samples_leaf):
+    params_rf = {}
+    params_rf['n_estimators'] = round(n_estimators)
+    params_rf['max_depth'] = round(max_depth)
+    params_rf['min_samples_split'] = round(min_samples_split)
+    params_rf['min_samples_leaf'] = round(min_samples_leaf)
+    params_rf['max_features'] = None
+    params_rf['bootstrap'] = False
+
+    model = RandomForestRegressor(**params_rf, random_state=0)
+    model.fit(training["Input"], training["Output"]["TotalExpenditure"])
+    y_pred = model.predict(val["Input"])
+
+    mse = mean_squared_error(val["Output"]["TotalExpenditure"], y_pred)
+    return -1 * np.sqrt(mse)
+
 def tune_hyperparamaters_bayes(
         val):  # (https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
     # Number of trees in random forest (initial range from: https://mljar.com/blog/how-many-trees-in-random-forest/)
-    grid =  {'n_estimators': Integer(1, 8)}
+    params = dict()
+    params['n_estimators'] = (1, 100)
+    params['max_depth'] = (1, 100)
+    params['min_samples_split'] = (2, 20)
+    params['min_samples_leaf'] = (1, 20)
+
     #grid = {'min_weight_fraction_leaf': Real(0, 0.5)}
 
     # Use the random grid to search for best hyperparameters
@@ -152,17 +175,17 @@ def tune_hyperparamaters_bayes(
     rf = RandomForestRegressor()
     # Random search of parameters, using 3 fold cross validation,
     # search across 100 different combinations, and use all available cores
-    rf_random = BayesSearchCV(rf, grid, n_iter=3, random_state=0, n_points=4, verbose=1)
+    rf_random = BayesianOptimization(rf_model, params, random_state=0)
     # Fit the random search model
-    rf_random.fit(val["Input"], val["Output"]["TotalExpenditure"])
-
-    print(rf_random.best_params_)
-    return rf_random.best_params_
+    rf_random.maximize(init_points=2000, n_iter=4)
+    print(rf_random)
 
 
 training, val, test = import_data()
+
+
 hyperparameters = tune_hyperparamaters_bayes(val)
 
 # hyperparameters = {'n_estimators': 355, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 200, 'bootstrap': False}
-models = train_model(training, hyperparameters)
-test_model(models, test)
+# models = train_model(training, hyperparameters)
+# test_model(models, test)
