@@ -5,6 +5,8 @@ from sklearn.metrics import mean_absolute_error
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+from skopt import BayesSearchCV
+from skopt.space import Real, Categorical, Integer, Space
 
 
 def import_data():
@@ -139,9 +141,28 @@ def plot_history(history, name):
     plt.show()
 
 
+def tune_hyperparamaters_bayes(
+        val):  # (https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
+    # Number of trees in random forest (initial range from: https://mljar.com/blog/how-many-trees-in-random-forest/)
+    grid =  {'n_estimators': Integer(1, 8)}
+    #grid = {'min_weight_fraction_leaf': Real(0, 0.5)}
+
+    # Use the random grid to search for best hyperparameters
+    # First create the base model to tune
+    rf = RandomForestRegressor()
+    # Random search of parameters, using 3 fold cross validation,
+    # search across 100 different combinations, and use all available cores
+    rf_random = BayesSearchCV(rf, grid, n_iter=3, random_state=0, n_points=4, verbose=1)
+    # Fit the random search model
+    rf_random.fit(val["Input"], val["Output"]["TotalExpenditure"])
+
+    print(rf_random.best_params_)
+    return rf_random.best_params_
+
+
 training, val, test = import_data()
-hyperparameters = tune_hyperparamaters(val)
-print(hyperparameters)
+hyperparameters = tune_hyperparamaters_bayes(val)
+
 # hyperparameters = {'n_estimators': 355, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 200, 'bootstrap': False}
-#models = train_model(training, hyperparameters)
-#test_model(models, test)
+models = train_model(training, hyperparameters)
+test_model(models, test)
