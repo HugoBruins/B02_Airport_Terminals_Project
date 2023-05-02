@@ -1,15 +1,20 @@
 import handle_data
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 import numpy as np
-from sklearn.model_selection import RandomizedSearchCV
+import copy
+import matplotlib.pyplot as plt
 
 
-def import_data():
+def import_data_main():
     # Import the data
     data = handle_data.csv_to_dataframe("logfiles.csv")
+    data = handle_data.strategies(data, "check_in_strategies.csv", "security_strategies.csv", True, True, True)
     training, val, test = handle_data.split_data(data)
-
+    # training = handle_data.strategies(training, "check_in_strategies.csv", "security_strategies.csv", True, True, True)
+    # val = handle_data.strategies(test, "check_in_strategies.csv", "security_strategies.csv", True, True, True)
+    # test = handle_data.strategies(test, "check_in_strategies.csv", "security_strategies.csv", True, True, True)
     training = handle_data.manipulate_data(training)
     val = handle_data.manipulate_data(val)
     test = handle_data.manipulate_data(test)
@@ -17,11 +22,11 @@ def import_data():
     return training, val, test
 
 
-def train_model(training, hyperparameters):
+def train_model_main(training, hyperparameters):
     # Loop over all the output variables individually
     models = {}
     for key in list(training["Output"]):
-        if key == "TotalExpenditure":
+        if key == "AvgTimeToGate":
             # Create a random forest classifier object
             rf_clf = RandomForestRegressor(**hyperparameters)
 
@@ -34,7 +39,7 @@ def train_model(training, hyperparameters):
 
 def test_model(models, test):
     for key in models:
-        if key == "TotalExpenditure":
+        if key == "AvgTimeToGate":
             # Use the trained model to predict on the test data
             y_pred = models[key].predict(test["Input"])
 
@@ -46,13 +51,13 @@ def test_model(models, test):
             f"\t\t\t{mean_real}\n")
 
 
-def tune_hyperparamaters(val):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
+def hyperparamaters_main(val):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
     # Number of trees in random forest (initial range from: https://mljar.com/blog/how-many-trees-in-random-forest/)
-    n_estimators = list(np.arange(950, 1150, 1))  # start = 200, stop = 2000, num = 10
+    n_estimators = list(np.arange(1, 50, 1))  # start = 200, stop = 2000, num = 10
     # Number of features to consider at every split
     max_features = ['auto', 'sqrt']
     # Maximum number of levels in tree
-    max_depth = list(np.arange(1, 150, 2, dtype=int))
+    max_depth = list(np.arange(1, 151, 25, dtype=int))
     max_depth.append(None)
     # Minimum number of samples required to split a node
     min_samples_split = [2, 5, 10]
@@ -61,32 +66,85 @@ def tune_hyperparamaters(val):  #(https://towardsdatascience.com/hyperparameter-
     # Method of selecting samples for training each tree
     bootstrap = [True, False]
     # Create the random grid
-    random_grid = {'n_estimators': n_estimators,
+    test_ranges = {'n_estimators': n_estimators,
                    'max_features': max_features,
                    'max_depth': max_depth,
                    'min_samples_split': min_samples_split,
                    'min_samples_leaf': min_samples_leaf,
                    'bootstrap': bootstrap}
-    print(random_grid)
 
-    # Use the random grid to search for best hyperparameters
-    # First create the base model to tune
-    rf = RandomForestRegressor()
-    # Random search of parameters, using 3 fold cross validation,
-    # search across 100 different combinations, and use all available cores
-    rf_random = RandomizedSearchCV(estimator=rf, param_distributions=random_grid, n_iter=100, cv=5, verbose=3, n_jobs=2)  # Next session, manually write this function!!! and put val data into test_model, leave test data out
-    # Fit the random search model
-    rf_random.fit(val["Input"], val["Output"]["TotalExpenditure"])
+    initial_parameters = {'n_estimators': 100,
+                          'max_features': 1.0,
+                          'max_depth': None,
+                          'min_samples_split': 2,
+                          'min_samples_leaf': 1,
+                          'bootstrap': True}
 
-    print(rf_random.best_params_)
-    return rf_random.best_params_
+    previous_parameters = copy.deepcopy(initial_parameters)
+    number_of_iterations = 2
+    keys = list(initial_parameters.keys())
+    for i in range(number_of_iterations):
+        print(f'starting iteration {i+1}...')
+        current_parameters = previous_parameters
+        for key in keys:
+            print(f'optimizing {key} in iteration {i+1}...')
+            current_parameters.pop(key)
+            new_value = optimize_parameter(key, test_ranges[key], current_parameters, training, val)
+            current_parameters[key] = new_value
+        previous_parameters = current_parameters
+    best_parameters = previous_parameters
+    return best_parameters
 
 
+def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, current_parameters, training, val):
+    history = []
+    for test_parameter_value in test_parameter_range:
+        current_parameters[test_parameter_key] = test_parameter_value
+        # Create a random forest classifier object
+        rf_clf = RandomForestRegressor(**current_parameters)
+
+        # Train the random forest classifier on the training data
+        rf_clf.fit(training['Input'], training["Output"]["AvgTimeToGate"])
+        mse = evaluate_accuracy(rf_clf, val)
+        print(f'{current_parameters}\nmse:{mse}')
+        history.append([test_parameter_value, mse])
+    min_error = min([x[1] for x in history])
+    for sublist in history:
+        if sublist[1] == min_error:
+            optimal_parameter = sublist[0]
+            break
+    print(f"Found optimal parameter {test_parameter_key} value of {optimal_parameter} with error {min_error}")
+    print(history)
+    plot_history(history, test_parameter_key)
+    return optimal_parameter
 
 
-training, val, test = import_data()
-hyperparameters = tune_hyperparamaters(val)
+def hyperparameters_evaluate_accuracy(rf_clf, val):
+    y_pred = rf_clf.predict(val["Input"])
+    # mean_pred = y_pred.mean()
+    # mean_real = val["Output"].mean()
+    mse = mean_absolute_error(val["Output"]["AvgTimeToGate"], y_pred)
+    return mse
 
-# hyperparameters = {'n_estimators': 355, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 200, 'bootstrap': False}
-models = train_model(training, hyperparameters)
-test_model(models, test)
+
+def hyperparameters_plot_history(history, name):
+
+    x_values = [x[0] for x in history]
+    y_values = [x[1] for x in history]
+
+    plt.plot(x_values, y_values)
+    plt.xlabel(name)
+    plt.ylabel('error')
+    plt.title(f'{name} vs error')
+    plt.show()
+
+
+def main():
+    training, val, test = import_data()
+    hyperparameters = hyperparamaters_main(val)
+    print(hyperparameters)
+    # hyperparameters = {'n_estimators': 355, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 200, 'bootstrap': False}
+    #models = train_model(training, hyperparameters)
+    #test_model(models, test)
+
+main()
