@@ -18,6 +18,24 @@ import copy
 import matplotlib.pyplot as plt
 
 
+import handle_data
+
+if __name__ == '__main__':
+    data = handle_data.csv_to_dataframe("logfiles.csv")
+    data = handle_data.manipulate_data(data)
+
+
+from sklearn.ensemble import RandomForestRegressor
+from skopt import BayesSearchCV
+from skopt.space import Real, Integer
+import handle_data
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+import numpy as np
+import copy
+import matplotlib.pyplot as plt
+
+
 def import_data():
     # Import the data
     data = handle_data.csv_to_dataframe("logfiles.csv")
@@ -74,15 +92,12 @@ param_space = {
 }
 
 # Define the objective function to optimize
-# Define the objective function to optimize
 def objective(params):
     rf = RandomForestRegressor(**params)
-    rf.fit(training['Input'], training["Output"]["AvgTimeToGate"])
-    y_pred = rf.predict(val['Input'])
-    mse = mean_squared_error(val['Output']["AvgTimeToGate"], y_pred)
-    return mse
+    return -np.mean(cross_val_score(rf, training['Input'], training["Output"]["AvgTimeToGate"], scoring='neg_mean_squared_error', cv=5))
 
 # Define the BayesSearchCV optimizer
+
 optimizer = BayesSearchCV(
     estimator=RandomForestRegressor(),
     search_spaces=param_space,
@@ -94,7 +109,10 @@ optimizer = BayesSearchCV(
 )
 
 # Run the optimizer to find the best hyperparameters
-optimizer.fit(training['Input'], training["Output"]["AvgTimeToGate"], X_val=val['Input'], y_val=val['Output']["AvgTimeToGate"])
+best_params = optimizer.fit(training['Input'], training["Output"]["AvgTimeToGate"], X_val=val['Input'], y_val=val['Output']["AvgTimeToGate"]).best_params_
+
+# Train the model with the best hyperparameters
+models = train_model(training, val, best_params)
 
 # Print the best hyperparameters and objective value
 print("Best hyperparameters: ", optimizer.best_params_)
