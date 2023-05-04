@@ -30,7 +30,7 @@ def train_model_main(training, hyperparameters):
     # Loop over all the output variables individually
     models = {}
     for key in list(training["Output"]):
-        if key == "AvgTimeToGate":
+        if key == "TotalExpenditure":
             # Create a random forest classifier object
             rf_clf = RandomForestRegressor(**hyperparameters)
 
@@ -43,7 +43,7 @@ def train_model_main(training, hyperparameters):
 
 def test_model(models, test):
     for key in models:
-        if key == "AvgTimeToGate":
+        if key == "TotalExpenditure":
             # Use the trained model to predict on the test data
             y_pred = models[key].predict(test["Input"])
 
@@ -139,7 +139,7 @@ def hyperparameter_optimize_parameter(test_parameter_key, test_parameter_range, 
         current_parameters[test_parameter_key] = test_parameter_value
         # train a model on training data with the current fixed parameters and the variable parameter
         rf_clf = RandomForestRegressor(**current_parameters)
-        rf_clf.fit(training['Input'], training["Output"]["AvgTimeToGate"])
+        rf_clf.fit(training['Input'], training["Output"]["TotalExpenditure"])
         # compute the error for these parameters using validation data
         mse = hyperparameters_evaluate_accuracy(rf_clf, val)
         print(f'{current_parameters}\nmse:{mse}')
@@ -184,7 +184,7 @@ def hyperparameters_evaluate_accuracy(rf_clf, val):
     y_pred = rf_clf.predict(val["Input"])
     # mean_pred = y_pred.mean()
     # mean_real = val["Output"].mean()
-    mse = mean_squared_error(val["Output"]["AvgTimeToGate"], y_pred)
+    mse = mean_squared_error(val["Output"]["TotalExpenditure"], y_pred)
     return mse
 
 
