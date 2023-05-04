@@ -1,3 +1,5 @@
+import time
+
 import handle_data
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
@@ -6,6 +8,7 @@ from sklearn.linear_model import LinearRegression
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+impor time
 
 
 def import_data_main():
@@ -52,7 +55,7 @@ def test_model(models, test):
             f"\t\t\t{mean_real}\n")
 
 
-def hyperparamaters_main(training, val, patience, increment_percentage):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
+def hyperparamaters_main(training, val, patience, increment_percentage, max_iterations, max_time):  #(https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74)
     # Number of trees in random forest (initial range from: https://mljar.com/blog/how-many-trees-in-random-forest/)
     n_estimators = list(np.arange(1, 31, 5))  # start = 200, stop = 2000, num = 10
     # Number of features to consider at every split
@@ -81,11 +84,15 @@ def hyperparamaters_main(training, val, patience, increment_percentage):  #(http
                           'bootstrap': True}
 
     previous_parameters = copy.deepcopy(initial_parameters)
-    number_of_iterations = 2
+    number_of_iterations = max_iterations
     keys = list(initial_parameters.keys())
 
     # For each iteration as specified above
+    time_start = time.process_time()
+    # Stop if max_time is exceeded
     for i in range(number_of_iterations):
+        if (time.process_time() - time_start) > max_time:
+            break
         print(f'starting iteration {i+1}...')
         current_parameters = previous_parameters
         # Remove a parameter, find the optimal one using the function, put it back
@@ -194,7 +201,7 @@ def hyperparameters_plot_history(history, name):
 
 def main():
     training, val, test = import_data_main()
-    hyperparameters = hyperparamaters_main(training, val, 20, 10)  #input: training data, val data, patience, increment_percentage
+    hyperparameters = hyperparamaters_main(training, val, 20, 10, 2, 1800)  #input: training data, val data, patience, increment_percentage, max_iterations, max_time
 
     print(hyperparameters)
     # hyperparameters = {'n_estimators': 355, 'min_samples_split': 10, 'min_samples_leaf': 1, 'max_features': 'sqrt', 'max_depth': 200, 'bootstrap': False}
