@@ -275,7 +275,7 @@ def manual_check_data(data: dict) -> None:
 #     pass
 
 
-def remove_faulty(data: dict, variable, k, group):
+def remove_faulty(data: dict, variable, k, groups):
     """
     This function will print the column name and the respective value in the exact same row as the
     instructive PowerPoint listed, which can be used to cross validate data changes
@@ -285,19 +285,13 @@ def remove_faulty(data: dict, variable, k, group):
     """
 
     full_data = pd.concat([data["Output"], data["Input"]], axis=1)
-
-    for j in range(len(group)):
-        part_data = full_data[(full_data['IdentifierType'] == group[j])]
-        # length = len(part_data)
-        # print(length)
-        # for key in full_data.keys():
-        #     # Check the number of unique values in the column
-        #     if len(set(input_data[key])) == 1 and key != "IdentifierType":
-        #         # If there's only one unique value, delete the column
-        #         del input_data[key]
-        length = len(set(part_data['IdentifierScenario']))
-        for i in range(length-1):
-            df = full_data[(full_data['IdentifierScenario'] == i+1) & (full_data['IdentifierType'] == group[j])]
+    print("Input data shape: ", full_data.shape)
+    for group in groups:
+        part_data = full_data[(full_data['IdentifierType'] == group)]
+        
+        scenarios = set(part_data['IdentifierScenario'])
+        for scenario in scenarios:
+            df = full_data[(full_data['IdentifierScenario'] == scenario) & (full_data['IdentifierType'] == group)]
             list = df[variable]
             use = list.sort_values(ascending = True)
             data_amount = len(list)
@@ -308,14 +302,16 @@ def remove_faulty(data: dict, variable, k, group):
             whisker = k * IQR  # To keep more values put 2*IQR or something else
             acceptable_min = use[use.index[int(data_amount_quart)]] - whisker
             acceptable_max = use[use.index[3* int(data_amount_quart)]] + whisker
-            full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group[j]))]
-            full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group[j]))]
+            full_data = full_data[~((full_data['IdentifierScenario'] == scenario) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group))]
+            full_data = full_data[~((full_data['IdentifierScenario'] == scenario) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group))]
+    
+    print("Shape after removing outliers: ", full_data.shape)
     output_data = full_data.iloc[:, :full_data.columns.get_loc("Gui")]
     input_data = full_data.iloc[:, full_data.columns.get_loc("Gui"):]
+    
     output = dict()
     output["Input"] = input_data
     output["Output"] = output_data
-    print(output_data)
     return output
 
 def make_sample_boxplot(data: dict, type, scenario, variable, factor):
