@@ -3,3 +3,5 @@ __pycache__/
 logfiles/
 plots/
 .DS_Store
+bayes_logs/
+.ipynb_checkpoints/
