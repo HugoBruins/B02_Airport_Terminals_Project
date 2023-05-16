@@ -271,10 +271,6 @@ def manual_check_data(data: dict) -> None:
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
 
 
-# def main(filename: str, check_in_strat_filename: str, security_strat_filename: str) -> dict, dict, dict:
-#     pass
-
-
 def remove_faulty(data: dict, variable, k, groups):
     """
     This function will print the column name and the respective value in the exact same row as the
@@ -288,27 +284,31 @@ def remove_faulty(data: dict, variable, k, groups):
     print("Input data shape: ", full_data.shape)
     for group in groups:
         part_data = full_data[(full_data['IdentifierType'] == group)]
-        
+
         scenarios = set(part_data['IdentifierScenario'])
         for scenario in scenarios:
             df = full_data[(full_data['IdentifierScenario'] == scenario) & (full_data['IdentifierType'] == group)]
             list = df[variable]
-            use = list.sort_values(ascending = True)
+            use = list.sort_values(ascending=True)
             data_amount = len(list)
             data_amount_quart = int(data_amount / 4)
 
-            IQR = use[use.index[3* int(data_amount_quart)]] - use[use.index[int(data_amount_quart)]]
+            IQR = use[use.index[3 * int(data_amount_quart)]] - use[use.index[int(data_amount_quart)]]
 
             whisker = k * IQR  # To keep more values put 2*IQR or something else
             acceptable_min = use[use.index[int(data_amount_quart)]] - whisker
-            acceptable_max = use[use.index[3* int(data_amount_quart)]] + whisker
-            full_data = full_data[~((full_data['IdentifierScenario'] == scenario) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group))]
-            full_data = full_data[~((full_data['IdentifierScenario'] == scenario) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group))]
-    
+            acceptable_max = use[use.index[3 * int(data_amount_quart)]] + whisker
+            full_data = full_data[~(
+                        (full_data['IdentifierScenario'] == scenario) & (full_data[variable] >= acceptable_max) & (
+                            full_data['IdentifierType'] == group))]
+            full_data = full_data[~(
+                        (full_data['IdentifierScenario'] == scenario) & (full_data[variable] <= acceptable_min) & (
+                            full_data['IdentifierType'] == group))]
+
     print("Shape after removing outliers: ", full_data.shape)
     output_data = full_data.iloc[:, :full_data.columns.get_loc("Gui")]
     input_data = full_data.iloc[:, full_data.columns.get_loc("Gui"):]
-    
+
     output = dict()
     output["Input"] = input_data
     output["Output"] = output_data
