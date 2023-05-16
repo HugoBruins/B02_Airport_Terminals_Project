@@ -271,9 +271,6 @@ def manual_check_data(data: dict) -> None:
     print("[DEBUG] End of manual data check, you can compare these values with what is in the powerpoint")
 
 
-# def main(filename: str, check_in_strat_filename: str, security_strat_filename: str) -> dict, dict, dict:
-#     pass
-
 def remove_faulty(data: dict, variable, k, groups):
     """
     This function will print the column name and the respective value in the exact same row as the
@@ -316,47 +313,6 @@ def remove_faulty(data: dict, variable, k, groups):
     output["Input"] = input_data
     output["Output"] = output_data
     return output
-# def remove_faulty(data: dict, variable, k, group):
-#     """
-#     This function will print the column name and the respective value in the exact same row as the
-#     instructive PowerPoint listed, which can be used to cross validate data changes
-#
-#     :param data: dataframe to compare, variable: the output parameter that we are deleting data from, k: parameter of how much data to delete (1.5), group: list of data-types (ADA etc.)
-#     :return: Dataset without outliers
-#     """
-#
-#     full_data = pd.concat([data["Output"], data["Input"]], axis=1)
-#
-#     for j in range(len(group)):
-#         part_data = full_data[(full_data['IdentifierType'] == group[j])]
-#         # length = len(part_data)
-#         # print(length)
-#         # for key in full_data.keys():
-#         #     # Check the number of unique values in the column
-#         #     if len(set(input_data[key])) == 1 and key != "IdentifierType":
-#         #         # If there's only one unique value, delete the column
-#         #         del input_data[key]
-#         length = len(set(part_data['IdentifierScenario']))
-#         for i in range(length-1):
-#             df = full_data[(full_data['IdentifierScenario'] == i+1) & (full_data['IdentifierType'] == group[j])]
-#             list = df[variable]
-#             use = list.sort_values(ascending = True)
-#             data_amount = len(list)
-#             data_amount_quart = int(data_amount / 4)
-#
-#             IQR = use[use.index[3* int(data_amount_quart)]] - use[use.index[int(data_amount_quart)]]
-#
-#             whisker = k * IQR  # To keep more values put 2*IQR or something else
-#             acceptable_min = use[use.index[int(data_amount_quart)]] - whisker
-#             acceptable_max = use[use.index[3* int(data_amount_quart)]] + whisker
-#             full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] >= acceptable_max) & (full_data['IdentifierType'] == group[j]))]
-#             full_data = full_data[~((full_data['IdentifierScenario'] == i+1) & (full_data[variable] <= acceptable_min) & (full_data['IdentifierType'] == group[j]))]
-#     output_data = full_data.iloc[:, :full_data.columns.get_loc("Gui")]
-#     input_data = full_data.iloc[:, full_data.columns.get_loc("Gui"):]
-#     output = dict()
-#     output["Input"] = input_data
-#     output["Output"] = output_data
-#     return output
 
 def make_sample_boxplot(data: dict, type, scenario, variable, factor):
     full_data = pd.concat([data["Output"], data["Input"]], axis=1)
