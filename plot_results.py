@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 
 def qq_plot(x_train, x_test, y_train, y_test, xlabel, ylabel, c_train, c_test):
-    fig, axs = plt.subplots(1, 3, gridspec_kw={'width_ratios': [3, 1, 1]})
+    fig, axs = plt.subplots(1, 2, gridspec_kw={'width_ratios': [3, 1]})
     fig.set_figwidth(15)
 
     # Put all the brothers together
@@ -11,7 +11,6 @@ def qq_plot(x_train, x_test, y_train, y_test, xlabel, ylabel, c_train, c_test):
     # Plot training plots
     axs[0].scatter(x_train, y_train, alpha=0.5, c=c_train, label="Training Data")
     axs[1].hist(y_train, bins=50, orientation='horizontal', color=c_train, ec=c_train)
-    sm.qqplot(y_train, ax=axs[2], markerfacecolor=c_train, markeredgecolor=c_train)
 
     # Plot test plots
     axs[0].scatter(x_test, y_test, alpha=0.5, c=c_test, label="Test data")
@@ -24,11 +23,6 @@ def qq_plot(x_train, x_test, y_train, y_test, xlabel, ylabel, c_train, c_test):
     axs[1].set_xlabel("Frequency")
     axs[1].grid(True)
     axs[1].set_yticklabels([])
-
-    sm.qqplot(y_test, ax=axs[2], markerfacecolor=c_test, markeredgecolor=c_test)
-    axs[2].set_ylabel("")
-    axs[2].yaxis.tick_right()
-    axs[2].grid(True)
 
 # #pulling and reading the file
 # logfile= pd.read_csv('logfiles_averaged_scenarios.csv')
